@@ -1,8 +1,8 @@
 Red [
-	File: %LZW.red
-	Description: {Implements parse-based algorithm for LZW compression and decompression with extendable codes}
-	Authors: "François Jouen and Toomas Vooglaid"
-	Rights:  "Copyright (C) 2022 Red Foundation. All rights reserved."
+    File: %LZW2.red
+    Description: {Implements parse-based algorithm for LZW compression and decompression with extendable codes}
+    Authors: "François Jouen and Toomas Vooglaid"
+    Rights:  "Copyright (C) 2022 Red Foundation. All rights reserved."
     License: {
         Distributed under the Boost Software License, Version 1.0.
         See https://github.com/red/red/blob/master/BSL-License.txt
@@ -21,12 +21,12 @@ lzw-ctx: context [
     ]
 
     set 'lzw-compress function [
-		string [string!]
-		/size  limit
-	][
+        string [string!]
+        /size  limit
+    ][
         if empty? string [return copy []]
         clear string-table
-		if limit [self/limit: limit]
+        if limit [self/limit: limit]
         code: self/limit 
         old: first string
         ending: [end keep (get-code old)]
@@ -48,12 +48,12 @@ lzw-ctx: context [
     ]
 
     set 'lzw-decompress function [
-		codes [block!]
-		/size limit
-	][
+        codes [block!]
+        /size limit
+    ][
         if empty? codes [return copy ""]
         clear string-table
-		if limit [self/limit: limit]
+        if limit [self/limit: limit]
         code: self/limit 
         old: first codes
         rejoin parse next codes [
