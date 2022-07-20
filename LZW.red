@@ -1,5 +1,5 @@
 Red [
-	File: %LZW2.red
+	File: %LZW.red
 	Description: {Implements parse-based algorithm for LZW compression and decompression with extendable codes}
 	Authors: "François Jouen and Toomas Vooglaid"
 	Rights:  "Copyright (C) 2022 Red Foundation. All rights reserved."
