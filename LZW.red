@@ -17,7 +17,7 @@ lzw-ctx: context [
         either string? w [select/case string-table w][to-integer w]
     ]
     get-string: func [code [integer!]][
-        either code > limit [string-table/:code][to-char code]
+        either code >= limit [string-table/:code][to-char code]
     ]
 
     set 'lzw-compress function [
