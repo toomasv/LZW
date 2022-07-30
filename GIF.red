@@ -261,6 +261,9 @@ GIF: context [
 	]
 ]
 comment [
-test: #{4749463839610A000A00910000FFFFFFFF00000000FF00000021F90400000000002C000000000A000A000002168C2D99872A1CDC33A00275EC95FAA8DE608C04914C01003B}
-GIF/decode test
+	do %GIF.red
+	GIF/decode read/binary %sample_1.gif ; sample_1_enlarged.gif  gif_file_stream.gif
+	im: make image! reduce [as-pair GIF/width GIF/height green]
+	im/rgb: GIF/colors
+	view [image im]
 ]
