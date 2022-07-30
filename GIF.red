@@ -88,6 +88,7 @@ GIF: context [
 					true [
 						;if error? err: try [
 							either selected: get-value code [
+								;found: "+"
 								append indices selected
 								if prev [
 									k: first selected
@@ -97,7 +98,7 @@ GIF: context [
 									if 2 ** code-size - 1 = available [code-size: code-size + 1]
 								]
 							][
-								found: "-"
+								;found: "-"
 								k: first selected: get-value prev
 								append indices new: append copy selected k
 								put code-table code new
