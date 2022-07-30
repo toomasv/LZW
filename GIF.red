@@ -247,7 +247,12 @@ GIF: context [
 		]
 	]
 	
-	decode: func [data [binary!] /local w h s p ctsz][
+	decode: func [data [binary! file!] /local w h s p ctsz][
+		if file? data [
+			either %.gif = suffix? data [
+				data: read/binary data
+			][print "Not a GIF!" return false]
+		]
 		parse data [
 			header-rule
 			opt color-table-rule
@@ -260,11 +265,14 @@ GIF: context [
 			#{3B} ; trailer
 		]
 	]
+	view: function [][
+		img: make image! reduce [as-pair width height green]
+		img/rgb: colors
+		system/words/view [image img]
+	]
 ]
 comment [
 	do %GIF.red
-	GIF/decode read/binary %sample_1.gif ; sample_1_enlarged.gif  gif_file_stream.gif
-	im: make image! reduce [as-pair GIF/width GIF/height green]
-	im/rgb: GIF/colors
-	view [image im]
+	GIF/decode %sample_1.gif ; sample_1_enlarged.gif  gif_file_stream.gif
+	GIF/view
 ]
