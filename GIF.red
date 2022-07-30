@@ -247,23 +247,24 @@ GIF: context [
 		]
 	]
 	
-	decode: func [data [binary! file!] /local w h s p ctsz][
+	main-rule: [
+		header-rule
+		opt color-table-rule
+		some [
+			opt graphics-control-extention
+			[image-rule | plain-text-extention]
+		|	application-extention
+		|	comment-extention
+		] 
+		#{3B} ; trailer
+	]
+	decode: func [data [binary! file!]][
 		if file? data [
 			either %.gif = suffix? data [
 				data: read/binary data
 			][print "Not a GIF!" return false]
 		]
-		parse data [
-			header-rule
-			opt color-table-rule
-			some [s:
-				opt graphics-control-extention
-				[image-rule | plain-text-extention]
-			|	application-extention
-			|	comment-extention
-			] 
-			#{3B} ; trailer
-		]
+		parse data main-rule
 	]
 	view: function [][
 		img: make image! reduce [as-pair width height green]
@@ -273,6 +274,6 @@ GIF: context [
 ]
 comment [
 	do %GIF.red
-	GIF/decode %sample_1.gif ; sample_1_enlarged.gif  gif_file_stream.gif
+	GIF/decode %dancing.gif ; %sample_1.gif ; sample_1_enlarged.gif ; gif_file_stream.gif ; 
 	GIF/view
 ]
