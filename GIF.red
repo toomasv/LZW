@@ -304,15 +304,41 @@ GIF: context [
 		parse data main-rule
 	]
 	
-	;view: function [][
-	;	img: make image! reduce [as-pair width height green]
-	;	img/rgb: colors
-	;	system/words/view [image img]
-	;]
+	view: function [][
+		either all [1 < len: length? images  netscape?] [
+			pane: collect [
+				repeat i len [
+					im: images/:i
+					set img: to-word rejoin ["img" i] make image! reduce [im/size im/colors]
+					keep 'at keep im/pos 
+					keep 'image keep img 
+					either i > 1 [keep 'hidden][]
+				]
+			]
+			insert pane [origin 0x0]
+			rate: 100 / images/1/delay
+			rate: either rate > 1 [to-time rate][to-integer rate]
+			append/only timer: compose [switch tick % (len)] collect [
+				repeat i len [
+					keep j: i - 1
+					either zero? j [
+						keep/only [foreach img next face/pane [img/visible?: no]]
+					][
+						keep/only reduce [to-set-path compose [face pane (i) visible?] 'yes]
+					]
+				]
+			]
+			append timer [tick: tick + 1]
+			system/words/view compose/only [panel (size) (pane) rate (rate) on-time (timer) do [tick: 0]]
+		][
+			img: make image! reduce [images/1/size images/1/colors]
+			system/words/view [image img]
+		]
+	]
 ]
 
 comment [
 	do %GIF.red
 	GIF/decode %dancing.gif ; %sample_1.gif ; sample_1_enlarged.gif ; gif_file_stream.gif ; 
-	;GIF/view
+	GIF/view
 ]
