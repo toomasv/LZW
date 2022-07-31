@@ -26,6 +26,7 @@ GIF: context [
 	code:
 	netscape?:
 	times:
+	current:
 		none
 	code-size: 0
 	color-table: copy []
@@ -97,12 +98,12 @@ GIF: context [
 						;probe indices 
 						;probe codes = aim 
 						colors: make binary! 3 * length? indices
-						table: either local-color-table-exists? [local-color-table][color-table]
+						table: either local-color-table-exists? [current/color-table][color-table]
 						map-by-index/zero/into indices table colors
 						return true
 					]
 					true [
-						;if error? err: try [
+						if error? err: try [
 							either selected: get-value code [
 								;found: "+"
 								append indices selected
@@ -121,21 +122,21 @@ GIF: context [
 								if 2 ** code-size - 1 = code [code-size: code-size + 1]
 							]
 							prev: code
-						;][
-						;	probe reduce [
-						;		"found" found
-						;		"count" count
-						;		"len"   length? codes
-						;		"prev"  prev
-						;		"code"  code
-						;		"k"     k
-						;		"avail" available
-						;		"sel"   selected
-						;		"new"   new
-						;		"err"   :err
-						;	]
-						;	halt
-						;]
+						][
+							probe reduce [
+								"found" found
+								"count" count
+								"len"   length? codes
+								"prev"  prev
+								"code"  code
+								"k"     k
+								"avail" available
+								"sel"   selected
+								"new"   new
+								"err"   :err
+							]
+							halt
+						]
 					]
 				]
 			]
@@ -226,7 +227,7 @@ GIF: context [
 			clear-code: 2 ** LZW-minimum-code-size
 			end-of-input: clear-code + 1
 			code-size: LZW-minimum-code-size + 1
-			;probe reduce ["LZW-min" LZW-minimum-code-size "CC" clear-code "EOI" end-of-input "CS" code-size]
+			probe reduce ["LZW-min" LZW-minimum-code-size "CC" clear-code "EOI" end-of-input "CS" code-size]
 			clear indices
 			clear codes
 			clear stream
@@ -317,7 +318,7 @@ GIF: context [
 			]
 			insert pane [origin 0x0]
 			rate: 100 / images/1/delay
-			rate: either rate > 1 [to-time rate][to-integer rate]
+			rate: either rate < 1 [to-time 1 / rate][to-integer rate]
 			append/only timer: compose [switch tick % (len)] collect [
 				repeat i len [
 					keep j: i - 1
@@ -329,7 +330,7 @@ GIF: context [
 				]
 			]
 			append timer [tick: tick + 1]
-			system/words/view compose/only [panel (size) (pane) rate (rate) on-time (timer) do [tick: 0]]
+			system/words/view probe compose/only [panel (size) (pane) rate (rate) on-time (timer) do [tick: 0]]
 		][
 			img: make image! reduce [images/1/size images/1/colors]
 			system/words/view [image img]
