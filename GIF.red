@@ -13,8 +13,8 @@ GIF: context [
 	pixel-aspect-ratio:
 	local-color-table-exists?:
 	local-color-table-size:
-	local-interlaced?:
-	local-sorted?:
+	;local-interlaced?:
+	;local-sorted?:
 	packed:
 	block-size:
 	LZW-minimum-code-size:
@@ -24,17 +24,33 @@ GIF: context [
 	colors:
 	prev:
 	code:
+	netscape?:
+	times:
 		none
 	code-size: 0
 	color-table: copy []
-	local-color-table: copy []
 	
 	code-table: make map! 1000
 	indices: copy []
 	codes: copy [] 
-	stream: copy "" 
+	stream: copy ""
+	images: copy []
 
-	
+	image: object [
+		disposal:
+		user-input?:
+		transparent?:
+		delay:
+		transparent-index:
+		pos:
+		size:
+		interlaced?:
+		sorted?:
+		color-table:
+		colors:
+			none
+	]
+		
 	get-code: function [
 		binary-string [string!] "Short string (<= 16) of 0s and 1s"
 	][
@@ -129,7 +145,7 @@ GIF: context [
 	header-rule: [
 		copy version ["GIF87a" | "GIF89a" | (print "Not a GIF!" return false)]
 		copy width  2 skip (width:  to integer! reverse width)
-		copy height 2 skip (height: to integer! reverse height)
+		copy height 2 skip (height: to integer! reverse height size: as-pair width height)
 		copy packed skip (
 			packed: enbase/base packed 2
 			color-table-exists?: packed/1 = #"1"
@@ -155,12 +171,18 @@ GIF: context [
 		] 
 	]
 	
-	graphics-control-extention: [
-		#{21F9} ; start graphics control extention
-		set block-size skip ; Is this always 4?
-		skip   ; packed field
-		2 skip ; delay time
-		skip   ; transparent-color-index
+	graphic-control-extension: [
+		#{21F9} ; start graphic control extension
+		(current: make image [])
+		set block-size skip ; Always 4
+		copy graphic-packed skip (
+			graphic-packed: enbase/base graphic-packed 2
+			current/disposal:       get-code copy/part at graphic-packed 4 3
+			current/user-input?:    graphic-packed/7 = #"1"
+			current/transparent?:   graphic-packed/8 = #"1"
+		)
+		copy delay 2 skip (current/delay: to-integer reverse delay)
+		set transparent-index skip (current/transparent-index: transparent-index) 
 		#{00}  ; terminator
 	]
 	
@@ -172,25 +194,28 @@ GIF: context [
 	
 	image-descriptor: [
 		#{2C} ; start image-descriptor
+		(unless current [current: make image []])
 		copy left   2 skip (left:   to integer! reverse left)
-		copy top    2 skip (top:    to integer! reverse top)
+		copy top    2 skip (top:    to integer! reverse top 
+			                current/pos: as-pair left top)
 		copy width  2 skip (width:  to integer! reverse width)
-		copy height 2 skip (height: to integer! reverse height)
+		copy height 2 skip (height: to integer! reverse height 
+			                current/size: as-pair width height)
 		copy packed skip (
 			packed: enbase/base packed 2
 			local-color-table-exists?: packed/1 = #"1"
-			local-interlaced?:         packed/2 = #"1"
-			local-sorted?:             packed/3 = #"1"
-			local-color-table-size: get-code at packed 6
+			current/interlaced?:         packed/2 = #"1"
+			current/sorted?:             packed/3 = #"1"
+			local-color-table-size:    get-code at packed 6
 		)
 	]
 	
 	local-color-table-rule: [
 		if (local-color-table-exists?) [
-			(clear local-color-table)
+			(current/color-table: copy [])
 			local-color-table-size [
 				copy color 3 skip 
-				(append local-color-table color) ;to tuple! color)
+				(append current/color-table color) ;to tuple! color)
 			]
 		] 		
 	]
@@ -213,12 +238,15 @@ GIF: context [
 					(insert stream enbase/base byte 2) 
 				]
 			| (LZW-decode stream) break]
-			
-		]
+		](
+			current/colors: copy colors
+			append images current 
+			current: none
+		)
 	]
 
-	plain-text-extention: [
-		#{2101} ; start plain text extention
+	plain-text-extension: [
+		#{2101} ; start plain text extension
 		set block-size skip
 		block-size skip
 		some [
@@ -227,18 +255,25 @@ GIF: context [
 		]
 	]
 	
-	application-extention: [
-		#{21FF} ; start application extention
+	application-extension: [
+		#{21FF} ; start application extension
 		set block-size skip
-		block-size skip
+		copy app block-size skip (netscape?: "NETSCAPE2.0" = to string! app)
 		some [
-			set block-size skip
-			[if (block-size > 0) block-size skip | break]
+			set block-size skip ; Probably 3 (if animated) or 0
+			[
+				if (block-size > 0) 
+					#{01} ; Always
+					copy times 2 skip (
+						times: to integer! reverse times
+					);block-size skip 
+			|	break
+			]
 		]
 	]
 	
-	comment-extention: [
-		#{21FE} ; start comment extention
+	comment-extension: [
+		#{21FE} ; start comment extension
 		set block-size skip
 		block-size skip
 		some [
@@ -251,27 +286,31 @@ GIF: context [
 		header-rule
 		opt color-table-rule
 		some [
-			opt graphics-control-extention
-			[image-rule | plain-text-extention]
-		|	application-extention
-		|	comment-extention
+			opt graphic-control-extension
+			[image-rule | plain-text-extension]
+		|	application-extension
+		|	comment-extension
 		] 
 		#{3B} ; trailer
 	]
+	
 	decode: func [data [binary! file!]][
 		if file? data [
 			either %.gif = suffix? data [
 				data: read/binary data
 			][print "Not a GIF!" return false]
 		]
+		(clear images)
 		parse data main-rule
 	]
+	
 	view: function [][
 		img: make image! reduce [as-pair width height green]
 		img/rgb: colors
 		system/words/view [image img]
 	]
 ]
+
 comment [
 	do %GIF.red
 	GIF/decode %dancing.gif ; %sample_1.gif ; sample_1_enlarged.gif ; gif_file_stream.gif ; 
