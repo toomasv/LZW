@@ -304,15 +304,15 @@ GIF: context [
 		parse data main-rule
 	]
 	
-	view: function [][
-		img: make image! reduce [as-pair width height green]
-		img/rgb: colors
-		system/words/view [image img]
-	]
+	;view: function [][
+	;	img: make image! reduce [as-pair width height green]
+	;	img/rgb: colors
+	;	system/words/view [image img]
+	;]
 ]
 
 comment [
 	do %GIF.red
 	GIF/decode %dancing.gif ; %sample_1.gif ; sample_1_enlarged.gif ; gif_file_stream.gif ; 
-	GIF/view
+	;GIF/view
 ]
