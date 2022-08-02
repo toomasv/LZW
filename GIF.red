@@ -405,8 +405,8 @@ GIF: context [
 		#{3B} (finished: yes) ; trailer
 	]
 	
-	decode: func [data [binary! file!] /show][
-		if file? data [
+	decode: func [data [binary! file! url!] /show][
+		if find [url! file!] type?/word data [
 			either %.gif = suffix? data [
 				data: read/binary data
 			][print "Not a GIF!" return false]
