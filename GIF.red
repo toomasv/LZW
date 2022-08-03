@@ -97,7 +97,7 @@ GIF: context [
 			while [not empty? c: take/last/part stream code-size][
 				if error? err: try [
 					count: count + 1
-					;if count % size/x = 1 [print line: line + 1]
+					;if count % current/size/x = 1 [print line: line + 1]
 					keep code: get-code copy c 
 					;probe reduce [code prev code-size c]
 					case [
@@ -176,6 +176,8 @@ GIF: context [
 		false
 	]
 
+	; RULES
+	
 	header-rule: [
 		copy version ["GIF87a" | "GIF89a" | (print "Not a GIF!" return false)]
 	]
@@ -379,6 +381,24 @@ GIF: context [
 			] true 2
 		])
 	]
+
+	superfluous-application-extension: [
+		#{21FF} ; start application extension
+		set block-size skip
+		copy app block-size skip ; Application name, eg. Adobe's "XMP DataXMP"
+		; see https://archimedespalimpsest.net/Documents/External/XMP/XMPSpecificationPart3.pdf
+		s: some [
+			set block-size skip 
+			[
+				if (block-size > 0) block-size skip 
+			|	e: (probe xmp: copy/part s e) break
+			]
+		]
+		(if show [
+			print "superfluous application-extension!" 
+		])
+	]
+
 	
 	comment-extension: [
 		#{21FE} ; start comment extension
@@ -399,7 +419,7 @@ GIF: context [
 			;opt 
 			graphic-control-extension              ;This should be together with next, but there are some sloppy gifs
 		|	[image-rule | plain-text-extension]
-		|	application-extension
+		|	application-extension any superfluous-application-extension
 		|	comment-extension
 		] 
 		#{3B} (finished: yes) ; trailer
@@ -424,8 +444,13 @@ GIF: context [
 			pane: collect [
 				if color-table-exists? [
 					set 'bg make image! reduce [size to-tuple color-table/(background-color-index + 1)]
-					unless all [keep 'at keep 0x0]
-					keep 'image keep 'bg
+					either all [
+						keep reduce ['panel size [origin 0x0 at 0x0 image bg]]
+					][
+						keep [at 0x0 image bg]
+						;keep 'at keep 0x0
+						;keep 'image keep 'bg
+					]
 				]
 				repeat i len [
 					frame: frames/:i
@@ -435,16 +460,26 @@ GIF: context [
 						[frame/size frame/colors]
 					]
 					set img: to-word rejoin ["img" i] image
-					unless all [keep 'at keep frame/pos]
-					if system/words/all [all (w: w + 1) % 4 = 0][keep 'return]
-					keep 'image keep img 
-					unless all [either i > 1 [keep 'hidden][]]
+					either all [
+						keep reduce ['panel size reduce ['origin 0x0 'at frame/pos 'image img]]
+						if (w: w + 1) % 4 = 0 [keep 'return]
+					][
+						;unless all [keep 'at keep frame/pos]
+						;if system/words/all [all (w: w + 1) % 4 = 0][keep 'return]
+						;keep 'image keep img 
+						;unless all [either i > 1 [keep 'hidden][]]
+						keep 'at keep frame/pos
+						keep 'image keep img 
+						either i > 1 [keep 'hidden][]
+					]
 				]
 			]
+			;insert pane either all [[origin 1x1]][[origin 0x0]]
 			insert pane [origin 0x0]
 			either all [
-				set 'lay layout probe compose/only [
-					panel (system/view/screens/1/size - 200) 
+				set 'lay layout compose/only [
+					backdrop black
+					panel (system/view/screens/1/size - 200)
 						on-down [xy: event/offset 'stop]
 						all-over on-over [if event/down? [
 							df: event/offset - xy foreach fc face/pane [fc/offset: fc/offset + df]
