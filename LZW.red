@@ -19,17 +19,17 @@ lzw-ctx: context [
     get-string: func [code [integer!]][
         either code >= limit [string-table/:code][to-char code]
     ]
-	top: function [str][
-		cs: charset str
-		repeat n l: 1 + length? cs [if cs/(i: l - n) [break]]
-		i
-	]
-	mismatch: function [s1 s2][
-		s3: s1
-		forall s1 [if s1/1 <> s2/(i: index? s1) [break]]
-		s1: s3
-		i
-	]
+    top: function [str][
+        cs: charset str
+        repeat n l: 1 + length? cs [if cs/(i: l - n) [break]]
+        i
+    ]
+    mismatch: function [s1 s2][
+        s3: s1
+        forall s1 [if s1/1 <> s2/(i: index? s1) [break]]
+        s1: s3
+        i
+    ]
 
     set 'lzw-compress function [
         string [any-string!]
